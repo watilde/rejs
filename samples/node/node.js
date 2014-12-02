@@ -14,7 +14,7 @@ function writeCache(pKey, pData) {
 
 function log(pString) {
   //console.log(pString);
-} 
+}
 
 var tOptions = {
   readCache: readCache,
@@ -39,13 +39,13 @@ exec('find ./ -type f -name "*.js" -not -name "node.js"', function(pError, pStdo
   }
 
   var tSortedFiles = tResolver.resolve(tBlobs);
-  var tOutputFD = fs.openSync('out.js', 'w');
+//  var tOutputFD = fs.openSync('out.js', 'w');
   var tBuffer;
 
   for (i = 0, il = tSortedFiles.length; i < il; i++) {
     tBuffer = fs.readFileSync(tSortedFiles[i]);
-    fs.writeSync(tOutputFD, tBuffer, 0, tBuffer.length, null);
+//    fs.writeSync(tOutputFD, tBuffer, 0, tBuffer.length, null);
   }
 
-  fs.closeSync(tOutputFD);
+//  fs.closeSync(tOutputFD);
 });

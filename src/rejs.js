@@ -25,12 +25,21 @@
     this.log = pOptions.log || function() {};
   }
 
+
   var tProto = Resolver.prototype;
 
+  /**
+   * @param {Object.<string, number>} pResources: filename: fileblob
+   * @param pExports
+   **/
   tProto.resolve = function(pResources, pExports) {
+    // ファイル名一覧
     var tKeys = Object.keys(pResources);
+    // for 変数
     var i;
+    // ファイルの数
     var il = tKeys.length;
+    // ファイル名
     var tKey;
     var tSource = '';
     var tStatsString, tStats;
@@ -45,21 +54,28 @@
 
     for (i = 0; i < il; i++) {
       tKey = tKeys[i];
+      console.log('\n---------\n');
+      console.log(tKey + ':\n\n');
 
+      // Cacheの有無を判断
       if (tDoCache && (tStatsString = this.readCache(tKey)) !== null) {
         tUnsortedStats[i] = {
           key: tKey,
           stats: JSON.parse(tStatsString)
         };
       } else {
+        // ソースコードのASTを取得
         tAST = mAcorn.parse(pResources[tKey], tAcornOptions);
 
+
+        // VM Classのインスタンスを生成
         tVM = new VM(this);
         tVM.globalScope.addAST(tAST);
         tVM.globalScope.interpret();
 
+        // / 状態を生成
         tStats = this.exportStats(tVM.globalScope);
-
+        // ソートしてないリストに追加
         tUnsortedStats[i] = {
           key: tKey,
           stats: tStats
@@ -70,10 +86,13 @@
         if (tDoCache) {
           this.writeCache(tKey, JSON.stringify(tStats));
         }
+        console.log('\n---------\n');
       }
     }
 
-    return this.sortStats(tUnsortedStats, pExports || null);
+    var yo = this.sortStats(tUnsortedStats, pExports || null);
+    // ソート
+    return yo;
   };
 
   var mGlobalScopeASTCache = null;
@@ -357,7 +376,7 @@
               break;
             }
           }
-          
+
           visitDown(tNode);
         }
 
@@ -368,7 +387,7 @@
       // Finally we just append the remaining
       // sources that require something but
       // it was never defined in our sources.
-      
+
       tKeys = Object.keys(cRequireMap);
 
       for (i = tKeys.length - 1; i >= 0; i--) {
@@ -431,11 +450,9 @@
     'declarations'
   ];
 
-  function VM(pResolver) {
+  function VM() {
     this.nativeMode = false;
-    this.resolver = pResolver;
-    this.log = pResolver.log;
-    
+
     var tExternsJS = '';
     var tGlobalScope;
     var tPredefines;
@@ -501,7 +518,7 @@
     if (pName instanceof Value) {
       pName = pName.value;
     }
-
+    console.log(pValue)
     this.members.value[pName] = pValue;
   };
 
@@ -532,7 +549,7 @@
 
     for (i = tScopes.length - 1; i >= 0; i--) {
       tScope = tScopes[i];
-      
+
       if (tScope.members.value.hasOwnProperty(tName)) {
         return tScope.members.value[tName];
       }
@@ -567,11 +584,11 @@
       for (i = 0, il = pAST.length; i < il; i++) {
         tAST = pAST[i];
         tType = tAST.type;
-
         if (tType === 'VariableDeclarator') {
           tSelf.assign(tAST.id.name, tSelf.vm.UNDEFINED());
         } else if (tType === 'FunctionDeclaration') {
           tNewScope = tSelf.newChildScope({});
+
           tFunction = createFunction(tSelf.vm, tNewScope, tAST.id.name, tAST.params, tAST.body);
           tNewScope.thisMember = tFunction;
 
@@ -582,7 +599,6 @@
             switch (tAST.id.name) {
               case 'Object':
                 tTemp = tSelf.objectPrototype = tNewScope.resolve('prototype');
-
                 break;
               case 'Function':
                 tTemp = tSelf.functionPrototype = tNewScope.resolve('prototype');
@@ -605,7 +621,6 @@
     if (pASTArray.__proto__ !== Array.prototype) {
       pASTArray = [pASTArray];
     }
-
     this.ast = this.ast.concat(pASTArray);
 
     preProcessAST(pASTArray);
@@ -615,7 +630,6 @@
     var tASTArray = this.ast;
     var tAST;
     var i, il;
-
     for (i = 0, il = tASTArray.length; i < il; i++) {
       tAST = tASTArray[i];
       this.handle(tAST);
@@ -650,7 +664,7 @@
 
   p.handleAndResolve = function(pAST) {
     var tResult = this.handle(pAST);
-    
+
     return this.resolve(tResult);
   };
 
